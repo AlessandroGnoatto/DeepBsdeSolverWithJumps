@@ -17,7 +17,7 @@ For each example in the paper you can find a dedicated script.
 
 ## Dependencies
 
-* [Tensorflo](https://github.com/tensorflow/tensorflow)
+* [Tensorflow](https://github.com/tensorflow/tensorflow)
 
 ## Reference
 [1] Gnoatto, A., Patacca, M., Picarelli, A. A Deep Solver for BSDEs with Jumps.
