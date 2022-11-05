@@ -1,0 +1,12 @@
+Legenda Cartelle
+
+In 20220518_Deep-Solver-master PureJump_ez_Screenshot e 20220615_Deep-Solver-master PureJump_ez_Screenshot ci sono gli screenshot delle varie prove effettuate (i risultati sono condensati nella sezione empirica del paper)
+
+Nelle cartelle 20220616_Deep-Solver-master PureJump_ez_AG e 20220616_Deep-Solver-master PureJump_ez_MP ci sono i codici definitivi utilizzati per le simulazioni finali riportate nella sezione empirica del paper
+
+AG e MP differiscono solo per la riga 37 di PureJumpSolver per il resto sono completamente uguali (i risultati della sezione empirica del paper sono tutti calcolati con MP)
+
+20221005_Deep-Solver-master PureJump_ez_MP è la copia di 20220616_Deep-Solver-master PureJump_ez_MP, cambia solo che è stata aggiunto la classe CGMY
+
+File CGMY è uguale a CGMY_prova2, cambia che è stato adeguato per essere inserito nel solver
+
