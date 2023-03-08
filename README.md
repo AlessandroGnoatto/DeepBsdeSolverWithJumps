@@ -1,4 +1,4 @@
-# [Deep BSDE solver with jumps]() in Python
+# Deep BSDE solver with jumps in Python
 
 
 ## How to run the examples
