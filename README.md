@@ -20,4 +20,4 @@ For each example in the paper you can find a dedicated script.
 * [Tensorflow](https://github.com/tensorflow/tensorflow)
 
 ## Reference
-[1] Gnoatto, A., Patacca, M., Picarelli, A. A Deep Solver for BSDEs with Jumps.
+[1] Andersson, K. Gnoatto, A., Patacca, M., Picarelli, A. A Deep Solver for BSDEs with Jumps. https://arxiv.org/abs/2211.04349
