@@ -4,36 +4,61 @@ import scipy.special as sc
 from scipy.stats import multivariate_normal as normal
 from scipy.fft import fft, ifft
 import matplotlib.pyplot as plt
+import time
 # from scipy.stats import norm
 # import pandas as pd
 
 plt.rcParams['figure.dpi'] = 300
 
-C=0.1; G=1.4; M=1.3; Y=0.5; 
+C=0.1; G=3.5; M=10; Y=0.5; 
+C=0.15
+G=13.
+M=14.
+Y=0.6
+eps = 0.00001
+
+a = 1 - Y
+sigmaEpsSq0 = C/M**(2-Y)*sc.gamma(a+1)*sc.gammainc(a+1,M*eps)+C/G**(2-Y)*sc.gamma(a+1)*sc.gammainc(a+1,G*eps)    
+bep0=C*sc.gamma(a)*(sc.gammainc(a,M*eps) -1)
+lambdaep0=C*np.exp(-M*eps)*eps**(-Y)/Y +bep0*M/Y
+ben0=C*sc.gamma(a)*(sc.gammainc(a,G*eps) -1)
+lambdaen0=C*np.exp(-G*eps)*eps**(-Y)/Y +ben0*G/Y
 
 h = 0.01
 n = 100
-eps = 0.0001
 
 
-Npaths = int(1e3)
+def_outside = False
+
+
+
+Npaths = int(1000)
 
 paths = np.zeros([Npaths,n])
 # jumpSizes = np.zeros([Npaths,n])
 # jumpIndicator = np.zeros([Npaths,n])
 
 def CGMYpathSimulation(Npaths,h,n,epsilon, C,G,M,Y):
-    a = 1-Y
-    sigmaEpsSq = C/M**(2-Y)*sc.gamma(a+1)*sc.gammainc(a+1,M*eps)+C/G**(2-Y)*sc.gamma(a+1)*sc.gammainc(a+1,G*eps)    
+    if not def_outside:
+        a = 1-Y
+        sigmaEpsSq = C/M**(2-Y)*sc.gamma(a+1)*sc.gammainc(a+1,M*eps)+C/G**(2-Y)*sc.gamma(a+1)*sc.gammainc(a+1,G*eps)    
+    else:
+        sigmaEpsSq = sigmaEpsSq0
     # print(sigmaEpsSq)    
     dW = normal.rvs(size=[Npaths,n])*np.sqrt(h)    
     diffu = np.cumsum(np.sqrt(sigmaEpsSq)*dW,axis=1)
     
     def CGMYPositiveOneSided(Npaths,h,n,eps, C,M,Y):
         a=1-Y
-        bep=C/(M**a)*sc.gamma(a)*(sc.gammainc(a,M*eps) -1)
-        # print(bep)
-        lambdaep=C*np.exp(-M*eps)*eps**(-Y)/Y +bep*M/Y
+        #bep=C/(M**a)*sc.gamma(a)*(sc.gammainc(a,M*eps) -1)
+        if not def_outside:
+            bep=C*sc.gamma(a)*(sc.gammainc(a,M*eps) -1)
+
+            # print(bep)
+            lambdaep=C*np.exp(-M*eps)*eps**(-Y)/Y +bep*M/Y
+        else:
+            bep = bep0
+            lambdaep = lambdaep0
         # print(lambdaep)
         DXep = np.zeros([Npaths,n])
         jumpSizes = np.zeros([Npaths,n])
@@ -66,17 +91,64 @@ def CGMYpathSimulation(Npaths,h,n,epsilon, C,G,M,Y):
             jumpSizes[k,:] = DJep
             DXep[k,:]=bep*h + DJep
         return DXep, jumpSizes
+    
+    def CGMYNegativeOneSided(Npaths,h,n,eps, C,M,Y):
+        a=1-Y
+        #bep=C/(M**a)*sc.gamma(a)*(sc.gammainc(a,M*eps) -1)
+        
+        if not def_outside:
+            ben=C*sc.gamma(a)*(sc.gammainc(a,M*eps) -1)
+            lambdaen=C*np.exp(-M*eps)*eps**(-Y)/Y +ben*M/Y
+        else:
+            ben = ben0
+            lambdaen = lambdaen0
+
+        # print(bep)
+        # print(lambdaep)
+        DXep = np.zeros([Npaths,n])
+        jumpSizes = np.zeros([Npaths,n])
+        
+        for k in range(0,Npaths): 
+            N=np.random.poisson(lambdaen)
+            U=np.random.uniform(0,1,N)
+        
+            DJep = np.zeros(n)
+            J = np.zeros(N)          
+            
+            def CGMYJumpSize(eps,C,M,Y):               
+                W=np.random.uniform(0,1,1)  
+                V=np.random.uniform(0,1,1)  
+                X=eps*W**(-1/Y)
+                T= np.exp(M*(X-eps))               
+                while V*T>1: 
+                    W=np.random.uniform(0,1,1)    
+                    V=np.random.uniform(0,1,1)  
+                    X=eps*W**(-1/Y)
+                    T= np.exp(M*(X-eps))
+                return X       
+                   
+            for j in range(0,N): 
+                J[j]= CGMYJumpSize(eps,C,M,Y) 
+
+            for i in range(0,n): 
+                DJep[i]=np.sum(J*(U>=i/n)*(U<(i+1)/n))
+
+            jumpSizes[k,:] = DJep
+            DXep[k,:]=ben*h + DJep
+        return DXep, jumpSizes
 
     [DXpep, jumpSizesUp] = CGMYPositiveOneSided(Npaths,h,n,eps, C,M,Y)
-    [DXnep, jumpSizesDown] = CGMYPositiveOneSided(Npaths,h,n,eps, C,G,Y)
+    [DXnep, jumpSizesDown] = CGMYNegativeOneSided(Npaths,h,n,eps, C,G,Y)
     DXep=DXpep-DXnep+diffu
     jumpSizes = jumpSizesUp-jumpSizesDown 
     jumpIndicator = np.zeros([Npaths,n])
     jumpIndicator[jumpSizes!=0] = 1
     return DXep,DXpep, DXnep, jumpIndicator, jumpSizes, jumpSizesUp, jumpSizesDown, dW, diffu
 
+tic =time.perf_counter()
 [DXep,DXpep, DXnep, jumpIndicator, jumpSizes, jumpSizesUp, jumpSizesDown, dW, diffu] = CGMYpathSimulation(Npaths,h,n,eps, C,G,M,Y)
 Xep = np.cumsum(DXep,axis=1)
+toc = time.perf_counter()
 
 def cf_cgmy(u,T,r,d,C,G,M,Y):
     m = 0
@@ -119,14 +191,18 @@ plt.show()
 
 ########################################################
 
-r = 0; # tasso risk free
+r = 0.04; # tasso risk free
 d = 0; # dividend yield
-S0 = 100;
+S0 = 1;
 T = 1;
 
 # m è il compensatore esponenziale che rende l'asset scontato martingala.
 # E' l'analogo di -0.5 sigma^2 per il modello Black-Scholes.
 m  = -C*sc.gamma(-Y)*((M-1)**Y-M**Y+(G+1)**Y-G**Y)
+
+a = 1-Y
+sigmaEpsSq = C/M**(2-Y)*sc.gamma(a+1)*sc.gammainc(a+1,M*eps)+C/G**(2-Y)*sc.gamma(a+1)*sc.gammainc(a+1,G*eps)    
+
 
 # Discretizzazione completa nel tempo
 AssetSimulation = np.zeros([Npaths,n+1])
@@ -134,16 +210,17 @@ AssetSimulation[:,0]=S0;
 deltaT = 1/n;
 
 for i in range(1,n+1):
-    AssetSimulation[:,i] = AssetSimulation[:,i-1]*np.exp( (r-d+m)*deltaT + DXep[:,i-1] )
+    AssetSimulation[:,i] = AssetSimulation[:,i-1]*np.exp( ( r - d + m  )*deltaT + DXep[:,i-1] )
+
 
 # MartingaleCheck
 MartingaleCheck = np.mean(AssetSimulation,0)
 
 fig2 = plt.figure()
 plt.plot(range(0,101), MartingaleCheck)
+plt.plot(range(0,101), np.exp(r*np.linspace(0,1,101)))
 plt.show()
-
-K = 90
+K = 0.9
 
 # fin qui è corretto (uguale al codice matlab)
 #############################################
@@ -205,12 +282,12 @@ def CallPricingFFT(n,S0,K,T,r,d,C,G,M,Y):
 ###########################################
 
 print("Price according to the FFT")
-priceFFT = CallPricingFFT(8,S0,K,T,r,d,C,G,M,Y);
+priceFFT = CallPricingFFT(16,S0,K,T,r,d,C,G,M,Y);
 print(priceFFT)
 
 print("Price according to Monte Carlo")
-priceMC = np.mean(np.maximum(AssetSimulation[:,-1]- K,0))*np.exp(-r*T);
+priceMC = np.mean(np.maximum(AssetSimulation[:,-1] - K,0))*np.exp(-r*T);
 print(priceMC)
 
 
-
+print(f"Time passed {toc - tic:0.4f} seconds")

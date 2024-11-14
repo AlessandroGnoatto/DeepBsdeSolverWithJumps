@@ -266,7 +266,9 @@ class CallOptionCGMY(Equation):
         
         def CGMYPositiveOneSided(Npaths,h,n,eps, C,M,Y):
             a=1-Y
-            bep=C/(M**a)*sc.gamma(a)*(sc.gammainc(a,M*eps) -1)
+            #bep=C/(M**a)*sc.gamma(a)*(sc.gammainc(a,M*eps) -1)
+            bep=C*sc.gamma(a)*(sc.gammainc(a,M*eps) -1)
+
             # print(bep)
             lambdaep=C*np.exp(-M*eps)*eps**(-Y)/Y +bep*M/Y
             # print(lambdaep)

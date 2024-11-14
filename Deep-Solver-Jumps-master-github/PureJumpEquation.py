@@ -215,7 +215,9 @@ class BasketOption(Equation):
     
     def g_tf(self, t, x):
        temp = tf.reduce_sum(x, 1,keepdims=True)
-       return tf.maximum(temp - self.dim * self.strike, 0)
+       #return tf.maximum(temp - self.dim * self.strike, 0)
+       return tf.maximum(1 / self.dim * temp - self.strike, 0)
+
     
     def getFsdeDiffusion(self, t, x):
         return self.sigma * x   
